@@ -2,6 +2,7 @@
 
 var mysql = require("mysql");
 var inquirer = require("inquirer");
+
 var connection = mysql.createConnection({
   host: "localhost",
   port: 3306,
@@ -12,41 +13,61 @@ var connection = mysql.createConnection({
   database: "bamazon"
 });
 
-connection.connect(function(err) {
+connection.connect(function(err, results) {
   if (err) throw err;
   start();
 });
 function start() {
-  inquirer
-    .prompt({
+  connection.query('select * from products', function(err, results) {
+    if (err) {throw err}
+    for (var i = 0; i < results.length; i++) {
+      console.log(results[i].item_id, results[i].product_name, results[i].price)
+    }
+
+    inquirer.prompt([
+    {
       name: "whichProduct", 
-      type: "rawlist",
-      message: "Which product ould you like to buy a product?",
-      choices: ["hammer", "puppy chow", "shampoo", "nike shoes", "tent", "football", "backpack", ",lamp", "smart phone", "microwave"]   
-      
-  });
-   
-  function buyProduct() {
+      type: "input",
+      message: ["Which product would you like to buy?"]
+
+  },{
+    name: "quantity",
+   type: "input",
+   message: ["How many would you like to buy?"]
+  }])
+    .then(function(answer) {
+                    // get the information of the chosen item
+        var choseItem = answer.whichProduct -1;
+        var quantity = answer.quantity;
+          if (quantity < results[choseItem].stock_quantity) {
+        connection.query("update products set ? where ?", [{
+          stock_quantity: results[choseItem].stock_quantity - quantity
+        },{
+          item_id: results[choseItem].item_id
+        }], function(error){
+          if(err) {throw err}
+            
+        })
+        }
+   }
+  )
+  })};
   
-  inquirer
-    .prompt([
-      {
-        name: "item",
-        type: "input",
-        message: "Which product you would like to buy?"
-      },
-      {
-        name: "quantity",
-        type: "input",
-        message: "How many would you like to buy?"
-      },
+
+  // inquirer
+  //   .prompt([{
+  //     name: "whichProduct", 
+  //     type: "rawlist",
+  //     message: ["Which product would you like to buy?"],
+  //     choices: ["hammer", "puppy chow", "shampoo", "nike shoes", "tent", "football", "backpack", ",lamp", "smart phone", "microwave"]   
       
-      }
-    ])
+  // },
+  
+  
 
        
 
-    .then(function(answer) {
+   /* .then(function(answer) {
       
       connection.query(
         "INSERT INTO item SET ?",
@@ -60,10 +81,10 @@ function start() {
           console.log("Your product(s) was purchsed successfully! Would you like to purchase another item(s)?");
                       // re-prompt the user for if they want buy more
           start();
-        }
-      );
-    });
-}
+        },
+      
+    
+
 
 function availableProducts() {   
                     // query the database for all items being sold
@@ -83,23 +104,11 @@ function availableProducts() {
             return choiceArray;
           },
           message: "What product would you like to purchase?"
+        
         },
-        {
-          name: "quantity",
-          type: "input",
-          message: "How many would you like to buy?"
-        }
-      ])
-      .then(function(answer) {
-                    // get the information of the chosen item
-        var choseItem;
-        for (var i = 0; i < results.length; i++) {
-          if (results[i].item_name === answer.choice) {
-            choseItem = results[i];
-          }
-        }
+       
                     // determine if item was in stock
-        if (choseItem.in_stock < parseInt(answer.buy)) {
+       if (choseItem.in_stock < parseInt(answer.buy)) {
                     // if the product was in stock and purchased, update database, let the user know, and start over
           connection.query(
             "UPDATE itemss SET ? WHERE ?",
@@ -118,13 +127,14 @@ function availableProducts() {
             }
           );
         }
+
         else {
               // item was out of stock
           console.log("The item you chose was out of stock. Purchase another item...");
           start();
         }
-      });
-  });
+      };
+  };
 }
 
           //for inventory
@@ -151,7 +161,7 @@ function updateProduct() {
     [
       {
         quantity: 50
-  
+      },
       {
         item: "shampoo"
       }
@@ -229,6 +239,9 @@ function readProducts() {
     if (err) throw err;
                   // Log all results of the SELECT statement
     console.log(res);
-    connection.end();
   });
-};
+}
+
+    connection.end();
+  };
+*/
